@@ -3,6 +3,7 @@ import express from 'express'
 import { Mppx, tempo, discovery } from 'mppx/express'
 import { Store } from 'mppx/server'
 import { landing } from './landing.js'
+import { walletInfo, walletPage } from './wallet.js'
 import { tlsInfo, dnsInfo, SEC_HEADERS, safeFetch, assertPublicUrl, parsePaymentChallenge, htmlToText, httpErr } from './lib.js'
 
 const store = process.env.DATABASE_URL
@@ -88,6 +89,9 @@ app.get('/api/safe-read', paySafeRead, async (req, res, next) => {
     res.json({ url: r.finalUrl, status: r.res.status, title: t.title, injectionRisk: t.risk, injectionSignals: t.flags, hiddenInstructionsDetected: t.hiddenInjection, links: t.links, chars: t.text.length, text: t.text.slice(0, 20000) })
   } catch (e) { next(e) }
 })
+
+app.get('/wallet', (_req, res) => res.type('html').send(walletPage))
+app.get('/api/wallet', async (_req, res, next) => { try { res.json(await walletInfo(process.env.RECIPIENT)) } catch (e) { next(e) } })
 
 const DEMO = ['github.com', 'stripe.com', 'example.com']
 const demoCache = new Map()

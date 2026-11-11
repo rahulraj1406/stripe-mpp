@@ -33,7 +33,7 @@ pre{background:var(--ink);color:#f7f7f7;border-radius:var(--r);padding:20px;over
 footer{margin-top:72px;padding:32px 24px;text-align:center;color:var(--muted);font-size:14px;border-top:1px solid var(--hair)}
 @media(max-width:560px){.stats b{font-size:22px}.ghost{margin:10px 0 0}}
 </style></head><body>
-<nav><b>preflight</b><span class="tag">MPP · Tempo testnet</span></nav>
+<nav><b>preflight</b><span><a href="/wallet" style="text-decoration:none;font-size:14px;font-weight:600;color:var(--ink);margin-right:14px">Wallet</a><span class="tag">MPP · Tempo testnet</span></span></nav>
 <header class="hero"><span class="pill">Pay per request. No API keys.</span>
 <h1>Check it <em>before</em> your agent pays or reads it.</h1>
 <p class="lead">Safety checks for AI agents over HTTP 402. Your agent gets a price, pays in the same request, and gets the answer back with a receipt.</p>
