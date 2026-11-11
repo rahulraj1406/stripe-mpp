@@ -18,6 +18,25 @@ const mppx = Mppx.create({
 const app = express()
 app.set('trust proxy', true)
 
+async function buildDomainReport(input) {
+    const raw = String(input || '').trim().toLowerCase().replace(/^https?:\/\//, '').split('/')[0]
+    if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(raw)) throw httpErr(400, 'provide a domain like example.com')
+    const [tlsR, dnsR, page] = await Promise.all([tlsInfo(raw), dnsInfo(raw), safeFetch(`https://${raw}`, { maxBytes: 5000 }).catch(() => null)])
+    const headers = Object.fromEntries(SEC_HEADERS.map((h) => [h, !!page?.res.headers.get(h)]))
+    const checks = {
+      tlsValid: !!(tlsR.ok && tlsR.authorized),
+      certNotExpiringSoon: !!(tlsR.ok && tlsR.daysLeft > 14),
+      modernTls: ['TLSv1.3', 'TLSv1.2'].includes(tlsR.protocol),
+      resolves: dnsR.a.length + dnsR.aaaa.length > 0,
+      hsts: headers['strict-transport-security'],
+      noSniff: headers['x-content-type-options'],
+      csp: headers['content-security-policy'],
+      spfPublished: dnsR.spf,
+    }
+    const score = Math.round((Object.values(checks).filter(Boolean).length / Object.keys(checks).length) * 100)
+    return { domain: raw, score, grade: score >= 85 ? 'A' : score >= 70 ? 'B' : score >= 50 ? 'C' : 'D', checks, tls: tlsR, dns: dnsR, securityHeaders: headers }
+}
+
 const payPreflight = mppx.charge({ amount: '0.02', description: 'Preflight check of a URL before an agent pays it' })
 const payDomain = mppx.charge({ amount: '0.01', description: 'Domain trust report: DNS, TLS certificate and security headers' })
 const paySafeRead = mppx.charge({ amount: '0.01', description: 'Fetch a web page as clean text with prompt-injection scan' })
@@ -56,22 +75,7 @@ app.get('/api/preflight', payPreflight, async (req, res, next) => {
 
 app.get('/api/domain-report', payDomain, async (req, res, next) => {
   try {
-    const raw = String(req.query.domain || '').trim().toLowerCase().replace(/^https?:\/\//, '').split('/')[0]
-    if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(raw)) throw httpErr(400, 'provide a domain like example.com')
-    const [tlsR, dnsR, page] = await Promise.all([tlsInfo(raw), dnsInfo(raw), safeFetch(`https://${raw}`, { maxBytes: 5000 }).catch(() => null)])
-    const headers = Object.fromEntries(SEC_HEADERS.map((h) => [h, !!page?.res.headers.get(h)]))
-    const checks = {
-      tlsValid: !!(tlsR.ok && tlsR.authorized),
-      certNotExpiringSoon: !!(tlsR.ok && tlsR.daysLeft > 14),
-      modernTls: ['TLSv1.3', 'TLSv1.2'].includes(tlsR.protocol),
-      resolves: dnsR.a.length + dnsR.aaaa.length > 0,
-      hsts: headers['strict-transport-security'],
-      noSniff: headers['x-content-type-options'],
-      csp: headers['content-security-policy'],
-      spfPublished: dnsR.spf,
-    }
-    const score = Math.round((Object.values(checks).filter(Boolean).length / Object.keys(checks).length) * 100)
-    res.json({ domain: raw, score, grade: score >= 85 ? 'A' : score >= 70 ? 'B' : score >= 50 ? 'C' : 'D', checks, tls: tlsR, dns: dnsR, securityHeaders: headers })
+    res.json(await buildDomainReport(req.query.domain))
   } catch (e) { next(e) }
 })
 
@@ -82,6 +86,20 @@ app.get('/api/safe-read', paySafeRead, async (req, res, next) => {
     if (!/text|html|json|xml/.test(ct)) throw httpErr(415, `unsupported content-type ${ct}`)
     const t = htmlToText(r.body)
     res.json({ url: r.finalUrl, status: r.res.status, title: t.title, injectionRisk: t.risk, injectionSignals: t.flags, hiddenInstructionsDetected: t.hiddenInjection, links: t.links, chars: t.text.length, text: t.text.slice(0, 20000) })
+  } catch (e) { next(e) }
+})
+
+const DEMO = ['github.com', 'stripe.com', 'example.com']
+const demoCache = new Map()
+app.get('/api/demo', async (req, res, next) => {
+  try {
+    const d = String(req.query.domain || '').toLowerCase()
+    if (!DEMO.includes(d)) throw httpErr(400, `demo supports: ${DEMO.join(', ')}. Pay via /api/domain-report for any domain.`)
+    const hit = demoCache.get(d)
+    if (hit && Date.now() - hit.t < 300000) return res.json(hit.v)
+    const v = { demo: true, note: 'Free sample. Paid endpoint: /api/domain-report', ...(await buildDomainReport(d)) }
+    demoCache.set(d, { t: Date.now(), v })
+    res.json(v)
   } catch (e) { next(e) }
 })
 
