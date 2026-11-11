@@ -40,18 +40,30 @@ footer{margin-top:72px;padding:32px 24px;text-align:center;color:var(--muted);fo
 <a class="cta" href="#try">Try it now</a><a class="ghost" href="/openapi.json">View API</a>
 <div class="stats"><div><b>$0.01</b><span>from</span></div><div><b>0</b><span>API keys</span></div><div><b>1</b><span>request to pay and get results</span></div></div>
 </header>
-<section class="wrap"><h2>Two paid endpoints</h2><p class="sub">Each one answers 402 until it's paid.</p>
+<section class="wrap"><h2>Three paid endpoints</h2><p class="sub">Each one answers 402 until it's paid.</p>
 <div class="cards">
 <div class="card"><span class="price">$0.02</span><h3>Preflight</h3><code>GET /api/preflight?url=</code><p>Is this paid API safe to pay? Checks HTTPS, a valid 402 challenge, price and recipient, discovery files and latency. Returns a 0-100 score and a verdict.</p></div>
+<div class="card"><span class="price">$0.01</span><h3>Domain report</h3><code>GET /api/domain-report?domain=</code><p>DNS, TLS certificate validity and expiry, and security headers for any domain, graded A to D.</p></div>
 <div class="card"><span class="price">$0.01</span><h3>Safe read</h3><code>GET /api/safe-read?url=</code><p>Fetches a web page as clean text and scans it for prompt-injection and hidden instructions before your agent reads it.</p></div>
 </div></section>
 <section class="wrap"><h2>How a call works</h2><p class="sub">The whole protocol is one request, a payment and a retry.</p>
 <div class="steps"><div class="step"><i>1</i><b>Request</b><span>Agent calls the endpoint</span></div><div class="step"><i>2</i><b>402</b><span>Server names the price</span></div><div class="step"><i>3</i><b>Pay</b><span>Agent pays, retries with proof</span></div><div class="step"><i>4</i><b>Result</b><span>JSON plus a Payment-Receipt</span></div></div></section>
+<section class="wrap" id="demo"><h2>Live demo</h2><p class="sub">A free sample of the domain report. The paid API works on any domain.</p>
+<div class="card"><div id="chips" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px"></div><div id="out" style="font-size:15px;color:var(--muted)">Pick a domain to run a check.</div></div></section>
 <section class="wrap" id="try"><h2>Try it</h2><p class="sub">Free testnet money, nothing real is charged.</p>
 <pre id="cmd">npx mppx account create
 npx mppx account fund --network testnet
 npx mppx "ORIGIN/api/preflight?url=https://example.com" --network testnet</pre>
 <p>Discovery: <a href="/openapi.json">/openapi.json</a> · <a href="/llms.txt">/llms.txt</a></p></section>
 <footer>Built for the MPP Hackathon. Payments use Tempo testnet pathUSD.</footer>
+<script>
+(function(){var ds=['github.com','stripe.com','example.com'],ch=document.getElementById('chips'),out=document.getElementById('out');
+function esc(x){return String(x).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+ds.forEach(function(d){var b=document.createElement('button');b.textContent=d;b.style.cssText='font:inherit;font-weight:600;padding:10px 18px;border:1px solid #ddd;border-radius:99px;background:#fff;cursor:pointer';
+b.onclick=function(){out.textContent='Checking '+d+'...';fetch('/api/demo?domain='+d).then(function(r){return r.json()}).then(function(j){
+if(j.error){out.textContent=j.error;return}
+var rows=Object.keys(j.checks).map(function(k){return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #ebebeb"><span>'+esc(k)+'</span><b style="color:'+(j.checks[k]?'#1a7f37':'#c13515')+'">'+(j.checks[k]?'pass':'fail')+'</b></div>'}).join('');
+out.innerHTML='<div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px"><span style="font-size:44px;font-weight:800;color:#222">'+esc(j.grade)+'</span><span style="color:#222;font-weight:600">'+esc(j.domain)+' &middot; '+j.score+'/100</span></div>'+rows+'<p style="font-size:13px;margin:12px 0 0">Free sample. Paid: <code>GET /api/domain-report?domain=</code> ($0.01)</p>'}).catch(function(){out.textContent='Demo unavailable.'})};ch.appendChild(b)})})();
+</script>
 <script>var c=document.getElementById('cmd');c.textContent=c.textContent.replace('ORIGIN',location.origin)</script>
 </body></html>`

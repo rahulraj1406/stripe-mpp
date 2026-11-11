@@ -65,3 +65,31 @@ export function htmlToText(html) {
   const hiddenInjection = INJECTION.some((r) => r.test(hidden))
   return { title, text, links, flags, hiddenInjection, risk: hiddenInjection ? 'high' : flags.length > 1 ? 'high' : flags.length ? 'medium' : 'low' }
 }
+
+import tls from 'node:tls'
+import dns2 from 'node:dns/promises'
+
+// TLS certificate details, connecting to a pre-validated public IP.
+export async function tlsInfo(host) {
+  const u = await assertPublicUrl(`https://${host}`)
+  const [{ address }] = await dns2.lookup(u.hostname, { all: true })
+  return new Promise((resolve) => {
+    const s = tls.connect({ host: address, port: 443, servername: u.hostname, timeout: 6000 }, () => {
+      const c = s.getPeerCertificate()
+      const daysLeft = c.valid_to ? Math.floor((new Date(c.valid_to) - Date.now()) / 86400000) : null
+      resolve({ ok: true, authorized: s.authorized, authError: s.authorizationError || null, protocol: s.getProtocol(), issuer: c.issuer?.O || c.issuer?.CN || null, subject: c.subject?.CN || null, validTo: c.valid_to || null, daysLeft })
+      s.end()
+    })
+    s.on('error', (e) => resolve({ ok: false, error: e.code || e.message }))
+    s.on('timeout', () => { s.destroy(); resolve({ ok: false, error: 'timeout' }) })
+  })
+}
+
+export async function dnsInfo(host) {
+  const q = (fn) => fn(host).catch(() => [])
+  const [a, aaaa, mx, ns, txt] = await Promise.all([q(dns2.resolve4), q(dns2.resolve6), q(dns2.resolveMx), q(dns2.resolveNs), q(dns2.resolveTxt)])
+  const txts = txt.map((t) => t.join(''))
+  return { a, aaaa, mx: mx.map((m) => m.exchange), ns, spf: txts.some((t) => t.startsWith('v=spf1')), txtCount: txts.length }
+}
+
+export const SEC_HEADERS = ['strict-transport-security', 'content-security-policy', 'x-content-type-options', 'x-frame-options', 'referrer-policy']
