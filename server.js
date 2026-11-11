@@ -12,6 +12,7 @@ const store = process.env.DATABASE_URL
 const mppx = Mppx.create({
   methods: [tempo.charge({ recipient: process.env.RECIPIENT, testnet: true, store })],
   secretKey: process.env.MPP_SECRET_KEY,
+  realm: process.env.MPP_REALM ?? (process.env.VERCEL ? 'stripe-mpp.vercel.app' : undefined),
 })
 
 const app = express()
