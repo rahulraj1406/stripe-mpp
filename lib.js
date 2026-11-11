@@ -52,7 +52,6 @@ const INJECTION = [
   /reveal (your|the) (instructions|prompt|system)/i,
   /do not tell the user/i,
   /(send|exfiltrate|post) .{0,40}(api[_ ]?key|password|token|secret)/i,
-  /<\s*(script|iframe)/i,
 ]
 
 export function htmlToText(html) {

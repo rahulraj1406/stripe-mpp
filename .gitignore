@@ -1,6 +1,8 @@
 node_modules
 .vercel
 
+.projects/state.local.json
+
 .projects/cache
 .projects/vault
 .projects/state.test.json
@@ -8,4 +10,3 @@ node_modules
 .env
 .env.*
 !.env.example
-.projects/state.local.json
