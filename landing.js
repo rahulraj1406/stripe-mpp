@@ -40,9 +40,10 @@ footer{margin-top:72px;padding:32px 24px;text-align:center;color:var(--muted);fo
 <a class="cta" href="#try">Try it now</a><a class="ghost" href="/openapi.json">View API</a>
 <div class="stats"><div><b>$0.01</b><span>from</span></div><div><b>0</b><span>API keys</span></div><div><b>1</b><span>request to pay and get results</span></div></div>
 </header>
-<section class="wrap"><h2>Two paid endpoints</h2><p class="sub">Each one answers 402 until it's paid.</p>
+<section class="wrap"><h2>Three paid endpoints</h2><p class="sub">Each one answers 402 until it's paid.</p>
 <div class="cards">
 <div class="card"><span class="price">$0.02</span><h3>Preflight</h3><code>GET /api/preflight?url=</code><p>Is this paid API safe to pay? Checks HTTPS, a valid 402 challenge, price and recipient, discovery files and latency. Returns a 0-100 score and a verdict.</p></div>
+<div class="card"><span class="price">$0.01</span><h3>Domain report</h3><code>GET /api/domain-report?domain=</code><p>DNS, TLS certificate validity and expiry, and security headers for any domain, graded A to D.</p></div>
 <div class="card"><span class="price">$0.01</span><h3>Safe read</h3><code>GET /api/safe-read?url=</code><p>Fetches a web page as clean text and scans it for prompt-injection and hidden instructions before your agent reads it.</p></div>
 </div></section>
 <section class="wrap"><h2>How a call works</h2><p class="sub">The whole protocol is one request, a payment and a retry.</p>
