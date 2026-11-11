@@ -2,6 +2,7 @@ import 'dotenv/config'
 import express from 'express'
 import { Mppx, tempo, discovery } from 'mppx/express'
 import { Store } from 'mppx/server'
+import { landing } from './landing.js'
 import { safeFetch, assertPublicUrl, parsePaymentChallenge, htmlToText, httpErr } from './lib.js'
 
 const store = process.env.DATABASE_URL
@@ -79,7 +80,7 @@ app.get('/llms.txt', (_req, res) => res.type('text/plain').send(`# Agent Preflig
 ## Payment
 MPP, Tempo testnet (pathUSD). Discovery: /openapi.json
 `))
-app.get('/', (_req, res) => res.type('text/plain').send('Agent Preflight. See /llms.txt and /openapi.json'))
+app.get('/', (_req, res) => res.type('html').send(landing))
 
 app.use((err, _req, res, _next) => res.status(err.status || 500).json({ error: err.message || 'error' }))
 
